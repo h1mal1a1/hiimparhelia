@@ -1,0 +1,1 @@
+/usr/bin/c++   -lpthread -g   CMakeFiles/mp_client.dir/main.cpp.o  -o mp_client -lpthread 

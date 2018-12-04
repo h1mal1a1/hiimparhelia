@@ -1,0 +1,28 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/linux/CLionProjects/mp_client/main.cpp
+iostream
+-
+cstring
+-
+stdlib.h
+-
+stdio.h
+-
+netinet/in.h
+-
+sys/types.h
+-
+sys/socket.h
+-
+unistd.h
+-
+errno.h
+-
+

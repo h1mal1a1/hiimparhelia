@@ -1,0 +1,1 @@
+/usr/bin/c++  -g   CMakeFiles/mp_proxyserv.dir/proxy.cpp.o CMakeFiles/mp_proxyserv.dir/proxy_parse.cpp.o  -o mp_proxyserv 

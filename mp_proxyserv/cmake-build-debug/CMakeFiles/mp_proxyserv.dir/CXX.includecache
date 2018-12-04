@@ -1,0 +1,28 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/linux/CLionProjects/mp_proxyserv/proxy_parse.cpp
+cstdlib
+-
+proxy_parse.h
+/home/linux/CLionProjects/mp_proxyserv/proxy_parse.h
+
+/home/linux/CLionProjects/mp_proxyserv/proxy_parse.h
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+stdarg.h
+-
+errno.h
+-
+ctype.h
+-
+

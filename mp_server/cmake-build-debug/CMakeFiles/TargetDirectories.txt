@@ -1,0 +1,3 @@
+/home/linux/CLionProjects/mp_server/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/linux/CLionProjects/mp_server/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/linux/CLionProjects/mp_server/cmake-build-debug/CMakeFiles/mp_server.dir

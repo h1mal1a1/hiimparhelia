@@ -6,5 +6,5 @@ CXX_FLAGS =  -lpthread -g   -std=gnu++14
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/linux/CLionProjects/mp_server/include 
+CXX_INCLUDES = -I/home/mint/hiimparhelia-master/mp_server/include 
 

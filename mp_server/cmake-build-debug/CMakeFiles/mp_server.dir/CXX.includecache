@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/home/linux/CLionProjects/mp_server/main.cpp
+/home/mint/hiimparhelia-master/mp_server/main.cpp
 iostream
 -
 cstring
@@ -34,5 +34,15 @@ pthread.h
 thread
 -
 regex
+-
+thread
+-
+arpa/inet.h
+-
+set
+-
+algorithm
+-
+fcntl.h
 -
 

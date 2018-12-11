@@ -12,42 +12,51 @@
 #include <pthread.h>
 #include <thread>
 #include <regex>
-
+#include <thread>
+#include <arpa/inet.h>
+#include <set>
+#include <algorithm>
+#include <fcntl.h>
 using namespace std;
 
+
+//1.Получить запрос и вытащить из него хост +
+//2.На этот хост отправить запрос +
+//3.Полученный ответ от хоста отправить клиенту.
+
 int sockCli = 0;
-char clientBuff[1024];
-void* serviceToClient(void* client_socket);
+char clientBuffer[1024];
+char servBuffer[1024];
+
+void* cliToServ(int sock);
+void* servToCli(int sock,char* buffer);
+void createNewSock(string host,int sock);
+
 string explodeStr(string& str);
 string explodeRequest(string str);
-string getHost();
-/*void* writeSck(void*);
-void* readSck(void*);*/
+string getHost(char* buffer);
 
-int main()
-{
-    int listenfd = 0;//mainsocket
+int main() {
+    int listenfd = 0;
     struct sockaddr_in serv_addr;
     string host;
+
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
-    if(listenfd < 0)
-    {
+    if(listenfd < 0) {
         perror("socket failed");
         exit(EXIT_FAILURE);
     }
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serv_addr.sin_port = htons(5003);
+    serv_addr.sin_port = htons(5001);
 
-    if(bind(listenfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) <0)
-    {
+    if(bind(listenfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
 
-    if(listen(listenfd, 10) <0)
-    {
+    if(listen(listenfd, 10) < 0) {
         perror("listen failed");
         exit(EXIT_FAILURE);
     }
@@ -55,24 +64,92 @@ int main()
     sockaddr_in client_addr;
     socklen_t client_addr_size=sizeof(client_addr);
 
-    while(1)
-    {
-        sockCli = accept(listenfd,(sockaddr *)&client_addr, &client_addr_size);
-        pthread_t* thId = new pthread_t;
-        pthread_create(&thId[0],NULL,serviceToClient,NULL);
-        pthread_join(thId[0],NULL);
-        getHost();
-        //pthread_create(&thId[1],NULL,writeSck,NULL);
-        //pthread_join(thId[1],NULL);
+    while(1) {
+        sockCli = accept(listenfd,(sockaddr *)&client_addr, &client_addr_size);//соединили слущающий сокет с клиентом
+
+        cliToServ(sockCli);//получили сообщение от клиента
+
+        string tmpHost = getHost(clientBuffer);// получили хост
+
+        int newsock;
+        thread th(createNewSock,tmpHost,newsock);//создали новый сокет для отправки запроса на хост
+        //this_thread::sleep_for(chrono::seconds(3));
+        th.detach();
+
+        //cout << clientBuffer <<  " - THis IS clientBuff 2"<< endl;
+
+        servToCli(newsock,servBuffer);//отправили запрос на хост
+
+        cliToServ(newsock);//получили ответ от хоста на отправленный запрос
+
+        servToCli(sockCli,servBuffer);//отправили полученный ответ от хоста в браузер
+        //recv(newsock,servBuffer,sizeof(servBuffer)-1,0);
     }
 
 
+    close(listenfd);
     return 0;
 }
 
-string getHost()
-{
-    string request = clientBuff;//преобразуем char в string
+
+//получение сообщения от клиента к серверу
+void* cliToServ(int sock) {
+    recv(sock,clientBuffer,sizeof(clientBuffer)-1,0);
+}
+
+//отправка сообщения от сервера к клиенту
+void* servToCli(int sock,char* buffer) {
+    send(sock,buffer,sizeof(buffer)-1,0);
+}
+
+void createNewSock(string host,int sock) {
+    struct sockaddr_in sock_addr;//структура сокета
+    struct hostent* raw_host;
+    raw_host = gethostbyname(host.c_str());
+
+
+    timeval time_out;
+    time_out.tv_sec = 0;
+    time_out.tv_usec = 5000000;
+
+    sock = socket(AF_INET,SOCK_STREAM,0);
+    if(sock < 0)
+    {
+        perror("new sock failed");
+        exit(1);
+    }
+    sock_addr.sin_family=AF_INET;
+    sock_addr.sin_port=htons(5000);
+
+    in_addr* address = (in_addr * )raw_host->h_addr;
+    string ip_address = inet_ntoa(* address);
+
+    sock_addr.sin_addr.s_addr = *(in_addr_t*)raw_host->h_addr;
+
+    if(connect(sock,(struct sockaddr *)&sock_addr,sizeof(sock_addr)) == -1) {
+        perror("connect");
+        exit(3);
+    }
+}
+
+
+//парсер по \n
+string explodeStr(string& str) {
+    string desired_str;
+
+    int i=0;
+
+    while(str[i] != '\n') {
+        desired_str += str[i];
+        str.erase(str.begin());
+    }
+    str.erase(str.begin());
+
+    return desired_str;
+}
+
+string getHost(char* buffer) {
+    string request = buffer;//преобразуем char в string
     string* allRequest = new string[2]; //создаем временный массив для хранения элементов запросов
 
     allRequest[0]=explodeStr(request);//получили заголовок
@@ -83,36 +160,12 @@ string getHost()
     if(host[host.size()-1] == '\r')
         host.pop_back();
 
-    string host2 = host;
-    cout << host << "-This is Host" << endl;
+    cout << host << " - This is HOST" << endl;
     return host;
 }
 
-//Потоковая функция
-void* serviceToClient(void* )
-{
-    recv(sockCli,clientBuff,sizeof(clientBuff)-1,0);
-    send(sockCli,clientBuff,sizeof(clientBuff)-1,0);
-}
-
-//парсер по \n
-string explodeStr(string& str)
-{
-    regex key("[^\n]+");
-    cmatch meth;
-
-    regex_search(str.c_str(),meth,key);
-    string tmpStr=meth[0];
-    regex tmpReg(tmpStr);
-    str=regex_replace(str.c_str(),tmpReg,"");
-
-    return tmpStr;
-}
-
-
 //парсит строку по :
-string explodeRequest(string str)
-{
+string explodeRequest(string str) {
     regex key("[^:]+");
     cmatch request;
 
@@ -130,43 +183,3 @@ string explodeRequest(string str)
 
     return secPath;
 }
-
-/*void* writeSck(void *)
-{
-    for(;;)
-    {
-        char s[1024];
-
-        cout << "<---";
-        bzero(s,BUF_SIZE+1);
-        cin.getline(s,BUF_SIZE);
-
-        send(sockCli,s,strlen(s),0);
-    }
-    close(sockCli);
-}
-
-void* readSck(void* )
-{
-    char test[BUF_SIZE];
-    bzero(test,BUF_SIZE+1);
-    bool loop = false;
-
-    while(!loop)
-    {
-        bzero(test,BUF_SIZE+1);
-
-        int rc = read(sockCli,test,BUF_SIZE);
-        if(rc>0)
-        {
-            string tester(test);
-            cout << ": " << tester << endl;
-
-            if(tester == "exit_server")
-                break;
-        }
-    }
-    cout << "\nClosing thread and conn" << endl;
-    close(sockCli);
-}*/
-
